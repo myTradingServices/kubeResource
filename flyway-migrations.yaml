@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyway-config
+data:
+  V1.1__candleTable.sql: |
+    CREATE TABLE trading.candles (
+      symbol VARCHAR(30),
+      bid_or_ask INT,
+      highest_price DECIMAL,
+      lowest_price DECIMAL,  
+      open_price DECIMAL,
+      close_pirce DECIMAL,
+      open_time TIMESTAMP WITH TIME ZONE,
+      time_interval INTERVAL,
+      PRIMARY KEY(open_time, symbol, bid_or_ask)
+    );
+  V1.2__positionModel.sql: |
+    CREATE TABLE trading.positions (
+      operation_id uuid PRIMARY KEY,
+      user_id uuid,
+      symbol varchar(10),
+      open_price decimal,
+      close_price decimal,
+      created_at timestamp WITH time zone DEFAULT NOW(),
+      long boolean
+    );
+
+    CREATE FUNCTION capture_func() 
+    RETURNS trigger AS 
+    $$
+    DECLARE
+      payload json;
+    BEGIN
+        IF (TG_OP = 'INSERT') THEN
+        payload = format('{"symbol":"%s","user_id":"%s","open_price":"%s","long":"%s"}', NEW.symbol, NEW.user_id, NEW.open_price, NEW.long);
+            RAISE NOTICE '%', 'NOTIFY on INSERT';
+            EXECUTE FORMAT('NOTIFY positionOpen, ''%s''', payload);
+            RETURN NEW;
+        ELSE
+        payload = format('{"symbol":"%s","user_id":"%s","close_price":"%s"}', NEW.symbol, NEW.user_id, NEW.close_price);
+            RAISE NOTICE '%', 'NOTIFY on UPDATE';
+            EXECUTE FORMAT('NOTIFY positionClose, ''%s''', payload);
+        RETURN NEW;
+        END IF;
+    END;
+    $$ LANGUAGE 'plpgsql';
+
+    CREATE TRIGGER mytrigger BEFORE INSERT OR UPDATE
+        ON  trading.positions FOR EACH ROW EXECUTE PROCEDURE capture_func();
+  V1.3__positionInit.sql: |
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('ec83812b-dcdc-4e8d-9a26-ecd5db649120', '49c27a45-f2b6-4b5b-9337-6ae6b22d71e9', 'symb1', '10.1', '1');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('95bc24ff-7f20-44a1-ad34-d314f5e6bc78', '0aaf795b-7eda-4037-aa0f-c31cd803ad8d', 'symb2', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('cfcf180b-37d5-4318-907a-d6012c4c3890', '618d0bc4-4117-401c-a01b-98afd677a1a7', 'symb3', '10.1', '1');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('5b0a3b6a-2d6e-4a1c-bb02-7f9d4ff0b4f1', 'c1e5c1e4-6c7a-4f64-8e9f-3a41b5c0f6a3', 'symb4', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('a2d0e8f3-8c2b-4d99-bb67-1d5e5d8d7d8d', 'd58f2f8a-cb4f-4e69-b22a-5eebc7d7bd9b', 'symb5', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('e7c4e3b6-f2a7-4e99-bb34-2d3e5f8d7d8e', '9a45d8cd-d2d6-4e46-9c4c-6a7f2eefbdc9', 'symb6', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('2384f927-5e2f-3998-8baa-c768616287f5', 'b7b3b5a3-fef9-4e30-bf6d-2ce05c7ea5c2', 'symb7', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('7a3dd5b9-a620-4171-a5fb-fda2f89c7a00', 'b5a71d65-4a9e-4be6-bb8a-cb7ff5dcf6ed', 'symb8', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('0bf145a8-cc23-48a1-a8b0-87e2016d681b', '2f0f6ab2-a70d-4d89-b9e9-bf14ce2e2a31', 'symb9', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('b7645eb6-adcc-4414-ad61-f296da2f3655', '9e6e1732-f6fb-4f41-a9c2-c06d3e5cc0a2', 'symb10', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('c6b55d36-2874-48d8-add6-c0f7b418797c', 'e4ac93f4-e5df-4f33-a7ee-b7f2f3dc2fc2', 'symb11', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('5d38e5ef-3873-4bdc-817d-529d32528ce6', '7a0a1a9c-c4f9-4914-bb38-f020af5d70a7', 'symb12', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('5eeea2a3-bce7-4b41-a652-4281ac8d11bf', '0cefc7e3-f57e-43a3-b8db-b59ddbae6e74', 'symb13', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('7b58fdee-200e-4119-89c0-b15bf7e067b3', 'e7f6eeb7-f031-44fa-bf50-c5efcbfb54ec', 'symb14', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('9440aebd-526a-49a4-a4c0-344c6117a98f', '6e9620db-d98b-40c7-bfd9-de4bfcaaa6ea', 'symb15', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('8d749e06-1ee3-4a3f-96fb-8f80d4f6d3dc', 'f95fd10e-ce80-40f0-b268-bd2700cf7ead', 'symb16', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('d89d12fd-b1d2-4640-b694-aacf7b6bd3cb', '6c87eb71-a7c9-4889-b66e-cd53e9ef7ac5', 'symb17', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('b0c4c4f0-b8c3-430e-9806-aebaa2ca41ef', 'db82e6ed-e9a5-4fb0-bff3-e03486726a5c', 'symb18', '10.1', '0');
+    INSERT INTO trading.positions (user_id, operation_id, symbol, open_price, long) VALUES ('b0c4c4f0-b8c3-430e-9806-aebaa2ca41ef', 'fd39ba34-f6dc-4ff2-a9e4-f5fdce5dc83a', 'symb19', '10.1', '0');
+ 
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: flyway
+          image: flyway/flyway:latest
+          command: ["flyway",
+           "-url=jdbc:postgresql://postgres:5432/chart",
+           "-user=user",
+           "-password=password",
+           "-locations=filesystem:/flyway/sql",
+           "-schemas=trading",
+           "-connectRetries=60",
+           "migrate"]
+          volumeMounts:
+            - name: sql
+              mountPath: /flyway/sql
+      volumes:
+        - name: sql
+          configMap:
+            name: flyway-config
+      restartPolicy: Never

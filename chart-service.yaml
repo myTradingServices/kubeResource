@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chart-service
+  labels:
+    app: chart-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chart-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: chart-service
+    spec:
+      containers:
+      - name: chart-service
+        image: chart-service:latest
+        imagePullPolicy: Never
+        env: 
+          - name: POSTGRES_DB_URI
+            value: postgres://user:password@postgres:5432/chart?sslmode=disable
+          - name: RPC_URI
+            value: "price-service:7071"

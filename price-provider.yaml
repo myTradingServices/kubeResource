@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment              
+metadata:                
+  name: price-provider        
+  labels:
+    app: price-provider
+spec:
+  replicas: 1                 
+  selector:
+    matchLabels:
+      app: price-provider
+  strategy:
+    type: Recreate      
+  template:
+    metadata:
+      labels:
+        app: price-provider
+    spec:
+      containers:
+      - name: price-provider
+        image: price-provider:latest        
+        imagePullPolicy: Never 
+        env:
+          - name: KAFKA_URL
+            value: "kafka-service:9092"
+          - name: KAFKA_TOPIC
+            value: "prices"
+status: {}

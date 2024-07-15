@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  strategy:
+    type: Recreate      
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis
+        command: ["redis-server", "--loglevel", "debug"]
+        imagePullPolicy: Always
+        ports:
+        - name: redis-port
+          containerPort: 6379
+        volumeMounts:
+          - name: redis-cache
+            mountPath: /data
+      volumes:
+        - name: redis-cache
+          emptyDir:
+            sizeLimit: 250Mi
+
+--- 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  selector:
+    app: redis
+  ports:
+  - name: "6379"
+    protocol: TCP
+    port: 6379
+    targetPort: redis-port
